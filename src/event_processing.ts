@@ -17,7 +17,7 @@ export async function processEvent(event: Event) {
     }
 }
 
-export function reprocessMatches() {
+export function processMatches() {
     for (const match of match_list) {
         processMatch(match);
     }
@@ -26,8 +26,8 @@ export function reprocessMatches() {
 type Options = NonNullable<Parameters<typeof rate>[1]>;
 
 let os_settings: Options = {
-    mu: 38 * 3,
-    sigma: 38,
+    mu: 31 * 3,
+    sigma: 31,
     tau: 0.3,
     preventSigmaIncrease: false,
 };
@@ -121,8 +121,8 @@ export function processMatch(match: Match) {
         os_teams.set(red_2.id, new_os_red_2);
         os_teams.set(blue_1.id, new_os_blue_1);
         os_teams.set(blue_2.id, new_os_blue_2);
-    } catch (_err) {
-        // console.log(`${err} on match: ${match.event.id}, ${match.id}`);
+    } catch (err) {
+        console.log(`${err} on match: ${match.event.id}, ${match.id}`);
     }
 }
 
@@ -158,15 +158,21 @@ export function predictMatch(red_1: string, red_2: string, blue_1: string, blue_
     return red_chance;
 }
 
-export function logTeams() {
+export function logTeams(...header_lines: string[]) {
+    let header = "";
+
+    for (const line of header_lines) {
+        header += `# ${line}\n`;
+    }
+
     const teams = Array.from(os_teams.entries());
 
     teams.sort((a, b) => ordinal(b[1]) - ordinal(a[1]));
 
-    const list = teams.map(value => `${team_numbers.get(value[0])}: ${ordinal(value[1])}`);
+    const list = teams.map((value, i) => `${i+1}, ${team_numbers.get(value[0])}, ${ordinal(value[1])}`);
 
-    console.log(list.slice(0, 50).join("\n"));
-    Deno.writeTextFile("./rankings", list.join("\n"));
+    console.log(`${header}\nrank, team, skill\n${list.slice(0, 50).join("\n")}`);
+    Deno.writeTextFile("./rankings.csv", `${header}\nrank, team, skill\n${list.join("\n")}`);
 }
 
 export function checkAccuracy() {
@@ -207,8 +213,8 @@ export function checkAccuracy() {
             if ((red_chance > blue_chance) == (red_alliance.score > blue_alliance.score)) {
                 accurate++;
             }
-        } catch (_err) {
-            // console.log(`${err} on match: ${match.event.id}, ${match.id}`);
+        } catch (err) {
+            console.log(`${err} on match: ${match.event.id}, ${match.id}`);
         }
     }
 

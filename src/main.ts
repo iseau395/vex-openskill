@@ -1,33 +1,21 @@
-import { reprocessMatches } from "./event_processing.ts";
-import { saveMatches } from "./event_processing.ts";
-import { loadMatches } from "./event_processing.ts";
-import { predictMatch } from "./event_processing.ts";
-import { processEvent, logTeams, checkAccuracy } from "./event_processing.ts";
-import { EventLevel } from "./robotevents-types.ts";
-import { getSignatureEvents } from "./robotevents.ts";
-import { getEventsRegion } from "./robotevents.ts";
-import { getEvent } from "./robotevents.ts";
+import { logTeams, processMatches, loadMatches, predictMatch, checkAccuracy } from "./event_processing.ts";
 
 if (import.meta.main) {
     // const events = getEventsRegion(new Date(), "California - Region 4");
-    const events = getSignatureEvents(new Date());
-    for await (const event of events) {
-        // if (event.level == EventLevel.Signature) continue; // skip over sigs if just processing a region
-        await processEvent(event);
-    }
-
-    for (let i = 0; i < 6; i++) {
-        reprocessMatches();
-    }
-
-    // await loadMatches(); // load cached matches from file
-
-    // for (let i = 0; i < 7; i++) {
-    //     reprocessMatches();
+    // // const events = getSignatureEvents(new Date());
+    // for await (const event of events) {
+    //     if (event.level == EventLevel.Signature) continue; // skip over sigs if just processing a region to get rid of out-of-region teams
+    //     await processEvent(event);
     // }
 
-    // logTeams();
+    await loadMatches(); // load cached matches from file
+
+    for (let j = 0; j < 10; j++) {
+        processMatches();
+    }
+
     const [accurate, total] = checkAccuracy();
+    logTeams("California - Region 4 Teams", `Accuracy: ${Math.round(accurate / total * 100 * 100) / 100}% (${accurate}/${total} matches guessed correct)`);
     console.log(`Accuracy: ${Math.round(accurate / total * 100 * 100) / 100}% (${accurate}/${total})`);
 
     // await saveMatches();
