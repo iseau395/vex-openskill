@@ -1,3 +1,5 @@
+import { setSkillWalk } from "./event_processing.ts";
+import { resetOS } from "./event_processing.ts";
 import { logTeams, processMatches, loadMatches, predictMatch, checkAccuracy } from "./event_processing.ts";
 
 if (import.meta.main) {
@@ -10,9 +12,17 @@ if (import.meta.main) {
 
     await loadMatches(); // load cached matches from file
 
-    for (let j = 0; j < 10; j++) {
-        processMatches();
-    }
+    // for (let i = 0; i < 100; i++) {
+    //     resetOS();
+        setSkillWalk(-0.00132, 0.00022);
+
+        for (let j = 0; j < 6; j++) {
+            processMatches();
+        }
+
+    //     const [accurate, total] = checkAccuracy();
+    //     console.log(`${(i+50) / 50000}, ${Math.round(accurate / total * 100 * 100) / 100}`);
+    // }
 
     const [accurate, total] = checkAccuracy();
     logTeams("California - Region 4 Teams", `Accuracy: ${Math.round(accurate / total * 100 * 100) / 100}% (${accurate}/${total} matches guessed correct)`);

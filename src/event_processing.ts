@@ -18,6 +18,7 @@ export async function processEvent(event: Event) {
 }
 
 export function processMatches() {
+    team_last_match.clear();
     for (const match of match_list) {
         processMatch(match);
     }
@@ -26,13 +27,13 @@ export function processMatches() {
 type Options = NonNullable<Parameters<typeof rate>[1]>;
 
 let os_settings: Options = {
-    mu: 31 * 3,
-    sigma: 31,
+    mu: 30 * 3,
+    sigma: 30,
     tau: 0.3,
     preventSigmaIncrease: false,
 };
-let mu_change = -0.0033;
-let sigma_change = 0;
+let mu_change = -0.00146;
+let sigma_change = -0.00042;
 const os_teams = new Map<number, ReturnType<typeof rating>>();
 const team_last_match = new Map<number, number>();
 const team_numbers = new Map<number, string>();
@@ -81,24 +82,28 @@ export function processMatch(match: Match) {
 
         if (match_start_time && !isNaN(match_start_time)) {
             const red_1_last_match_time = team_last_match.get(red_1.id) ?? match_start_time;
-            os_red_1.sigma += sigma_change * (match_start_time - red_1_last_match_time) / (60 * 60 * 1000);
-            os_red_1.mu += mu_change * (match_start_time - red_1_last_match_time) / (60 * 60 * 1000);
-
-            if (isNaN((match_start_time - red_1_last_match_time))) {
-                console.log(match_start_time, red_1_last_match_time);
+            if (match_start_time - red_1_last_match_time > 0) {
+                os_red_1.sigma += sigma_change * (match_start_time - red_1_last_match_time) / (60 * 60 * 1000);
+                os_red_1.mu += mu_change * (match_start_time - red_1_last_match_time) / (60 * 60 * 1000);
             }
 
             const red_2_last_match_time = team_last_match.get(red_2.id) ?? match_start_time;
-            os_red_2.sigma += sigma_change * (match_start_time - red_2_last_match_time) / (60 * 60 * 1000);
-            os_red_2.mu += mu_change * (match_start_time - red_2_last_match_time) / (60 * 60 * 1000);
+            if (match_start_time - red_2_last_match_time > 0) {
+                os_red_2.sigma += sigma_change * (match_start_time - red_2_last_match_time) / (60 * 60 * 1000);
+                os_red_2.mu += mu_change * (match_start_time - red_2_last_match_time) / (60 * 60 * 1000);
+            }
 
             const blue_1_last_match_time = team_last_match.get(blue_1.id) ?? match_start_time;
-            os_blue_1.sigma += sigma_change * (match_start_time - blue_1_last_match_time) / (60 * 60 * 1000);
-            os_blue_1.mu += mu_change * (match_start_time - blue_1_last_match_time) / (60 * 60 * 1000);
+            if (match_start_time - blue_1_last_match_time > 0) {
+                os_blue_1.sigma += sigma_change * (match_start_time - blue_1_last_match_time) / (60 * 60 * 1000);
+                os_blue_1.mu += mu_change * (match_start_time - blue_1_last_match_time) / (60 * 60 * 1000);
+            }
 
             const blue_2_last_match_time = team_last_match.get(blue_2.id) ?? match_start_time;
-            os_blue_2.sigma += sigma_change * (match_start_time - blue_2_last_match_time) / (60 * 60 * 1000);
-            os_blue_2.mu += mu_change * (match_start_time - blue_2_last_match_time) / (60 * 60 * 1000);
+            if (match_start_time - blue_2_last_match_time > 0) {
+                os_blue_2.sigma += sigma_change * (match_start_time - blue_2_last_match_time) / (60 * 60 * 1000);
+                os_blue_2.mu += mu_change * (match_start_time - blue_2_last_match_time) / (60 * 60 * 1000);
+            }
 
             team_last_match.set(red_1.id, match_start_time);
             team_last_match.set(red_2.id, match_start_time);
@@ -169,7 +174,7 @@ export function logTeams(...header_lines: string[]) {
 
     teams.sort((a, b) => ordinal(b[1]) - ordinal(a[1]));
 
-    const list = teams.map((value, i) => `${i+1}, ${team_numbers.get(value[0])}, ${ordinal(value[1])}`);
+    const list = teams.map((value, i) => `${i + 1}, ${team_numbers.get(value[0])}, ${ordinal(value[1])}`);
 
     console.log(`${header}\nrank, team, skill\n${list.slice(0, 50).join("\n")}`);
     Deno.writeTextFile("./rankings.csv", `${header}\nrank, team, skill\n${list.join("\n")}`);
