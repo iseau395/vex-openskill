@@ -12,13 +12,12 @@ export async function processEvent(event: Event) {
 
         for await (const match of matches) {
             match_list.push(match);
-            processMatch(match);
+            // processMatch(match);
         }
     }
 }
 
 export function processMatches() {
-    team_last_match.clear();
     for (const match of match_list) {
         processMatch(match);
     }
@@ -27,13 +26,13 @@ export function processMatches() {
 type Options = NonNullable<Parameters<typeof rate>[1]>;
 
 let os_settings: Options = {
-    mu: 30 * 3,
-    sigma: 30,
-    tau: 0.3,
+    mu: 31 * 3,
+    sigma: 31,
+    tau: 0.24,
     preventSigmaIncrease: false,
 };
-let mu_change = -0.00146;
-let sigma_change = -0.00042;
+let mu_change = 0.001;
+let sigma_change = 0;
 const os_teams = new Map<number, ReturnType<typeof rating>>();
 const team_last_match = new Map<number, number>();
 const team_numbers = new Map<number, string>();
@@ -73,34 +72,34 @@ export function processMatch(match: Match) {
         team_numbers.set(blue_1.id, blue_1.name);
         team_numbers.set(blue_2.id, blue_2.name);
 
-        const match_start_time = match?.started ? Date.parse(match?.started!) : Date.parse(match?.scheduled!);
-
         const os_red_1 = rating(os_teams.get(red_1.id), os_settings);
         const os_red_2 = rating(os_teams.get(red_2.id), os_settings);
         const os_blue_1 = rating(os_teams.get(blue_1.id), os_settings);
         const os_blue_2 = rating(os_teams.get(blue_2.id), os_settings);
+        
+        const match_start_time = match?.started ? Date.parse(match?.started!) : Date.parse(match?.scheduled!);
 
         if (match_start_time && !isNaN(match_start_time)) {
             const red_1_last_match_time = team_last_match.get(red_1.id) ?? match_start_time;
-            if (match_start_time - red_1_last_match_time > 0) {
+            if (red_1_last_match_time - match_start_time > 0) {
                 os_red_1.sigma += sigma_change * (match_start_time - red_1_last_match_time) / (60 * 60 * 1000);
                 os_red_1.mu += mu_change * (match_start_time - red_1_last_match_time) / (60 * 60 * 1000);
             }
 
             const red_2_last_match_time = team_last_match.get(red_2.id) ?? match_start_time;
-            if (match_start_time - red_2_last_match_time > 0) {
+            if (red_2_last_match_time - match_start_time > 0) {
                 os_red_2.sigma += sigma_change * (match_start_time - red_2_last_match_time) / (60 * 60 * 1000);
                 os_red_2.mu += mu_change * (match_start_time - red_2_last_match_time) / (60 * 60 * 1000);
             }
 
             const blue_1_last_match_time = team_last_match.get(blue_1.id) ?? match_start_time;
-            if (match_start_time - blue_1_last_match_time > 0) {
+            if (blue_1_last_match_time - match_start_time > 0) {
                 os_blue_1.sigma += sigma_change * (match_start_time - blue_1_last_match_time) / (60 * 60 * 1000);
                 os_blue_1.mu += mu_change * (match_start_time - blue_1_last_match_time) / (60 * 60 * 1000);
             }
 
             const blue_2_last_match_time = team_last_match.get(blue_2.id) ?? match_start_time;
-            if (match_start_time - blue_2_last_match_time > 0) {
+            if (blue_2_last_match_time - match_start_time > 0) {
                 os_blue_2.sigma += sigma_change * (match_start_time - blue_2_last_match_time) / (60 * 60 * 1000);
                 os_blue_2.mu += mu_change * (match_start_time - blue_2_last_match_time) / (60 * 60 * 1000);
             }
@@ -163,21 +162,22 @@ export function predictMatch(red_1: string, red_2: string, blue_1: string, blue_
     return red_chance;
 }
 
-export function logTeams(...header_lines: string[]) {
-    let header = "";
-
-    for (const line of header_lines) {
-        header += `# ${line}\n`;
-    }
-
+export function logTeams(title: string, accuracy: number) {
     const teams = Array.from(os_teams.entries());
 
     teams.sort((a, b) => ordinal(b[1]) - ordinal(a[1]));
 
-    const list = teams.map((value, i) => `${i + 1}, ${team_numbers.get(value[0])}, ${ordinal(value[1])}`);
+    const list = teams.map(
+        (value, i) => 
+            `${i + 1}, ${team_numbers.get(value[0])}, ${ordinal(
+                {
+                    mu: value[1].mu + mu_change * (Date.now() - team_last_match.get(value[0])!) / (60 * 60 * 1000),
+                    sigma: value[1].sigma + sigma_change * (Date.now() - team_last_match.get(value[0])!) / (60 * 60 * 1000)
+                })}`
+    );
 
-    console.log(`${header}\nrank, team, skill\n${list.slice(0, 50).join("\n")}`);
-    Deno.writeTextFile("./rankings.csv", `${header}\nrank, team, skill\n${list.join("\n")}`);
+    console.log(`rank, team, skill\n${list.slice(0, 50).join("\n")}`);
+    Deno.writeTextFile(`./rankings/${title} - (${Math.round(accuracy * 100 * 100) / 100}%).csv`, `rank, team, skill\n${list.join("\n")}`);
 }
 
 export function checkAccuracy() {

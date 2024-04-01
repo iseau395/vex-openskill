@@ -1,34 +1,28 @@
-import { setSkillWalk } from "./event_processing.ts";
-import { resetOS } from "./event_processing.ts";
-import { logTeams, processMatches, loadMatches, predictMatch, checkAccuracy } from "./event_processing.ts";
+import { processEvent } from "./event_processing.ts";
+import { saveMatches } from "./event_processing.ts";
+import { logTeams, processMatches, predictMatch, checkAccuracy } from "./event_processing.ts";
+import { getSignatureEvents } from "./robotevents.ts";
 
 if (import.meta.main) {
     // const events = getEventsRegion(new Date(), "California - Region 4");
-    // // const events = getSignatureEvents(new Date());
-    // for await (const event of events) {
-    //     if (event.level == EventLevel.Signature) continue; // skip over sigs if just processing a region to get rid of out-of-region teams
-    //     await processEvent(event);
-    // }
+    const events = getSignatureEvents(new Date());
+    for await (const event of events) {
+        // if (event.level == EventLevel.Signature) continue; // skip over sigs if just processing a region to get rid of out-of-region teams
+        if (event.location.country != "United States") continue; // only look at US sigs
+        await processEvent(event);
+    }
 
-    await loadMatches(); // load cached matches from file
+    // await loadMatches(); // load cached matches from file
 
-    // for (let i = 0; i < 100; i++) {
-    //     resetOS();
-        setSkillWalk(-0.00132, 0.00022);
-
-        for (let j = 0; j < 6; j++) {
-            processMatches();
-        }
-
-    //     const [accurate, total] = checkAccuracy();
-    //     console.log(`${(i+50) / 50000}, ${Math.round(accurate / total * 100 * 100) / 100}`);
-    // }
+    for (let j = 0; j < 10; j++) {
+        processMatches();
+    }
 
     const [accurate, total] = checkAccuracy();
-    logTeams("California - Region 4 Teams", `Accuracy: ${Math.round(accurate / total * 100 * 100) / 100}% (${accurate}/${total} matches guessed correct)`);
+    logTeams("US sigs", accurate/total);
     console.log(`Accuracy: ${Math.round(accurate / total * 100 * 100) / 100}% (${accurate}/${total})`);
 
-    // await saveMatches();
+    await saveMatches();
 
     // allow for user input to predict matches
     while (true) {
