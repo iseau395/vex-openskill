@@ -3,7 +3,7 @@ import { EventLevel } from "./robotevents-types.ts";
 import { getEvent, getEventsRegion, getSignatureEvents } from "./robotevents.ts";
 
 if (import.meta.main) {
-    const events = getEventsRegion(new Date(), "Ohio");
+    const events = getEventsRegion(new Date(), "California - Region 4");
     // const events = getSignatureEvents(new Date());
     for await (const event of events) {
         if (event.level == EventLevel.Signature || event.name.toLowerCase().includes("one world")) continue; // skip over sigs if just processing a region to get rid of out-of-region teams
@@ -23,8 +23,8 @@ if (import.meta.main) {
 
     const [accurate, total] = checkAccuracy();
 
-    await pruneTeamsByRegion("Ohio"); // get rid of some of the teams who aren't in the region (doesn't get rid of all)
-    logTeams("OH", accurate/total);
+    await pruneTeamsByRegion("California"); // get rid of some of the teams who aren't in the region (doesn't get rid of all)
+    logTeams("CA r4", accurate/total);
     console.log(`Accuracy: ${Math.round(accurate / total * 100 * 100) / 100}% (${accurate}/${total})`);
 
     // allow for user input to predict matches
