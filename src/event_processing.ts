@@ -2,19 +2,47 @@ import { rate, rating, ordinal, predictWin } from "npm:openskill";
 
 import { AllianceColor, Event, Match } from "./robotevents-types.ts";
 import { getMatches } from "./robotevents.ts";
+import { getTeamsByEvents } from "./robotevents.ts";
 
 const match_list = new Array<Match>();
+const event_ids = new Array<number>();
 
+export async function processEvent(event: Event, division_id?: number) {
+    event_ids.push(event.id);
 
-export async function processEvent(event: Event) {
-    for (let i = 0; i < event.divisions?.length!; i++) {
-        const matches = getMatches(event.id, event.divisions![i].id!);
+    async function processDivision(division_id: number) {
+        const matches = getMatches(event.id, division_id);
 
         for await (const match of matches) {
             match_list.push(match);
             // processMatch(match);
         }
     }
+
+    if (division_id) {
+        await processDivision(division_id);
+    } else {
+        for (let i = 0; i < event.divisions?.length!; i++) {
+            await processDivision(event.divisions![i].id!);
+        }
+    }
+}
+
+export async function pruneTeamsByRegion(region: string) {
+    const teams = getTeamsByEvents(event_ids);
+    const team_ids = new Array<number>();
+
+    for await (const team of teams) {
+        if (team.location?.region == region) {
+            team_ids.push(team.id);
+        }
+    }
+
+    os_teams.forEach((_, key) => {
+        if (!team_ids.includes(key)) {
+            os_teams.delete(key);
+        }
+    });
 }
 
 export function processMatches() {
@@ -50,6 +78,10 @@ export function setSkillWalk(new_mu_change: number, new_sigma_change: number) {
 }
 
 export function processMatch(match: Match) {
+    if (!event_ids.includes(match.event.id)) {
+        event_ids.push(match.event.id);
+    }
+
     try {
         const red_alliance = match.alliances[0].color == AllianceColor.Red ? match.alliances[0] : match.alliances[1];
         const blue_alliance = match.alliances[0].color == AllianceColor.Blue ? match.alliances[0] : match.alliances[1];

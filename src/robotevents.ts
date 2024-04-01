@@ -2,6 +2,7 @@ import { load } from "https://deno.land/std@0.220.0/dotenv/mod.ts";
 import { Match, Paginated } from "./robotevents-types.ts";
 import { Event } from "./robotevents-types.ts";
 import { EventLevel } from "./robotevents-types.ts";
+import { Team } from "./robotevents-types.ts";
 export * from "./robotevents-types.ts";
 
 const env = await load();
@@ -35,7 +36,7 @@ export async function requestRobotEvents<T extends unknown>(path: string, parame
             request_queue.push(resolve);
         });
     }
-    
+
     awaiting_request = true;
 
     if (ratelimit_remaining <= 1) {
@@ -76,7 +77,7 @@ export async function requestRobotEvents<T extends unknown>(path: string, parame
     const response = await fetch(url, { headers: { "accept": "application/json", "Authorization": `Bearer ${ROBOTEVENTS_API_KEY}` } });
     ratelimit_limit = +(response.headers.get("x-ratelimit-limit") ?? ratelimit_limit);
     ratelimit_remaining = +(response.headers.get("x-ratelimit-remaining") ?? ratelimit_remaining - 1);
-    
+
     console.log(`ratelimit: ${ratelimit_remaining}/${ratelimit_limit}`);
 
     if (request_queue.length > 0) {
@@ -86,7 +87,7 @@ export async function requestRobotEvents<T extends unknown>(path: string, parame
     }
 
     if (response.ok) {
-        return response.json(); 
+        return response.json();
     } else {
         console.log(`error: ${response}`);
         if (response.status == 429) {
@@ -103,16 +104,16 @@ export async function requestRobotEvents<T extends unknown>(path: string, parame
 
 const PER_PAGE = 250;
 
-export async function* requestPaginated<T>(path: string, parameters?: { [key: string]: unknown }) {
+export async function* requestPaginated<T>(path: string, parameters?: { [key: string]: unknown }, per_page = PER_PAGE) {
     if (!parameters) {
         parameters = {};
     }
 
-    parameters = { page: 1, per_page: PER_PAGE, ...parameters };
+    parameters = { page: 1, per_page, ...parameters };
 
     let page = 1;
     let last_page = 1;
-    
+
     let request = requestRobotEvents<Paginated<T>>(path, parameters);
 
     while (page <= last_page) {
@@ -147,4 +148,12 @@ export function getSignatureEvents(before: Date) {
 
 export function getMatches(event_id: number, division_id: number) {
     return requestPaginated<Match>(`/events/${event_id}/divisions/${division_id}/matches`);
+}
+
+export async function* getTeamsByEvents(event_ids: number[]) {
+    const teams = requestPaginated<Team>(`/teams`, { "event[]": event_ids, "myTeams": false }, 200); // per page reduced because robotevents didn't like it at 250
+
+    for await (const team of teams) {
+        yield team;
+    }
 }
