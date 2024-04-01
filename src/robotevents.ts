@@ -134,15 +134,19 @@ export async function* requestPaginated<T>(path: string, parameters?: { [key: st
     }
 }
 
+export function getAllEvents(before: Date = new Date()) {
+    return requestPaginated<Event>(`/events`, { "season[]": CURRENT_SEASON, "myEvents": false, end: before.toISOString() });
+}
+
 export async function getEvent(sku: string) {
     return (await requestRobotEvents<Paginated<Event>>("/events", { "sku[]": sku, "myEvents": false })).data[0] ?? null;
 }
 
-export function getEventsRegion(before: Date, region: string) {
+export function getEventsRegion(region: string, before: Date = new Date()) {
     return requestPaginated<Event>(`/events`, { "season[]": CURRENT_SEASON, "myEvents": false, end: before.toISOString(), region });
 }
 
-export function getSignatureEvents(before: Date) {
+export function getSignatureEvents(before: Date = new Date()) {
     return requestPaginated<Event>(`/events`, { "season[]": CURRENT_SEASON, "level[]": EventLevel.Signature, "myEvents": false, end: before.toISOString() });
 }
 

@@ -1,15 +1,24 @@
 import { pruneTeamsByRegion, loadMatches, processEvent, saveMatches, logTeams, processMatches, predictMatch, checkAccuracy } from "./event_processing.ts";
 import { EventLevel } from "./robotevents-types.ts";
+import { getAllEvents } from "./robotevents.ts";
 import { getEvent, getEventsRegion, getSignatureEvents } from "./robotevents.ts";
 
 if (import.meta.main) {
-    const events = getEventsRegion(new Date(), "California - Region 4");
-    // const events = getSignatureEvents(new Date());
+    const events = getAllEvents();
+    // const events = getSignatureEvents();
+    let i = 0;
     for await (const event of events) {
-        if (event.level == EventLevel.Signature || event.name.toLowerCase().includes("one world")) continue; // skip over sigs if just processing a region to get rid of out-of-region teams
-        // if (event.location.country != "United States") continue; // only look at US sigs
+        // if (event.level == EventLevel.Signature || event.name.toLowerCase().includes("one world")) continue; // skip over sigs if just processing a region to get rid of out-of-region teams
+        if (event.location.country != "United States") continue; // only look at US sigs
         await processEvent(event);
+
+        i++;
+        if (i % 50 == 0) {
+            await saveMatches();
+        }
     }
+
+    await saveMatches();
 
     // await processEvent(await getEvent("RE-VRC-23-4809"));
 
@@ -19,12 +28,10 @@ if (import.meta.main) {
         processMatches();
     }
 
-    await saveMatches();
-
     const [accurate, total] = checkAccuracy();
 
-    await pruneTeamsByRegion("California"); // get rid of some of the teams who aren't in the region (doesn't get rid of all)
-    logTeams("CA r4", accurate/total);
+    // await pruneTeamsByRegion("California"); // get rid of some of the teams who aren't in the region (doesn't get rid of all)
+    logTeams("all US", accurate/total);
     console.log(`Accuracy: ${Math.round(accurate / total * 100 * 100) / 100}% (${accurate}/${total})`);
 
     // allow for user input to predict matches
