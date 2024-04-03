@@ -42,7 +42,7 @@ export async function requestRobotEvents<T extends unknown>(path: string, parame
     if (ratelimit_remaining <= 1) {
         console.log("Hit timeout, waiting 60 seconds...");
         await delay(60_000);
-    } else if (ratelimit_remaining < 10) {
+    } else if (ratelimit_remaining < 7) {
         console.log("Approacing timeout, waiting 10 seconds...");
         await delay(10_000);
     }

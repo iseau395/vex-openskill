@@ -56,7 +56,8 @@ type Options = NonNullable<Parameters<typeof rate>[1]>;
 let os_settings: Options = {
     mu: 31 * 3,
     sigma: 31,
-    tau: 0.24,
+    tau: 0.9,
+    // tau: 10,
     preventSigmaIncrease: false,
 };
 let mu_change = 0.001;
@@ -86,7 +87,7 @@ export function processMatch(match: Match) {
         const red_alliance = match.alliances[0].color == AllianceColor.Red ? match.alliances[0] : match.alliances[1];
         const blue_alliance = match.alliances[0].color == AllianceColor.Blue ? match.alliances[0] : match.alliances[1];
 
-        if (red_alliance.score == 0 || blue_alliance.score == 0 || red_alliance.score == blue_alliance.score) {
+        if (red_alliance.score == 0 || !blue_alliance.score || blue_alliance.score == 0 || !red_alliance.score || red_alliance.score == blue_alliance.score) {
             return;
         }
 
@@ -153,6 +154,11 @@ export function processMatch(match: Match) {
             }
         );
 
+        if (isNaN(ordinal(new_os_red_1)) || isNaN(ordinal(new_os_red_2)) || isNaN(ordinal(new_os_blue_1)) || isNaN(ordinal(new_os_blue_2))) {
+            console.log(`OS NaN after runing rate, ignoring result. Match: ${match}`);
+            return;
+        }
+
         os_teams.set(red_1.id, new_os_red_1);
         os_teams.set(red_2.id, new_os_red_2);
         os_teams.set(blue_1.id, new_os_blue_1);
@@ -199,12 +205,14 @@ export function logTeams(title: string, accuracy: number) {
 
     teams.sort((a, b) => ordinal(b[1]) - ordinal(a[1]));
 
+    const now = Date.now();
+
     const list = teams.map(
         (value, i) => 
             `${i + 1}, ${team_numbers.get(value[0])}, ${ordinal(
                 {
-                    mu: value[1].mu + mu_change * (Date.now() - team_last_match.get(value[0])!) / (60 * 60 * 1000),
-                    sigma: value[1].sigma + sigma_change * (Date.now() - team_last_match.get(value[0])!) / (60 * 60 * 1000)
+                    mu: value[1].mu + mu_change * (now - (team_last_match.get(value[0]) ?? now)) / (60 * 60 * 1000),
+                    sigma: value[1].sigma + sigma_change * (now - (team_last_match.get(value[0]) ?? now)) / (60 * 60 * 1000)
                 })}`
     );
 

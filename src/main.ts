@@ -1,28 +1,31 @@
-import { pruneTeamsByRegion, loadMatches, processEvent, saveMatches, logTeams, processMatches, predictMatch, checkAccuracy } from "./event_processing.ts";
+import { pruneTeamsByRegion, loadMatches, processEvent, saveMatches, logTeams, processMatches, predictMatch, checkAccuracy, resetOS, setOSSettings } from "./event_processing.ts";
 import { EventLevel } from "./robotevents-types.ts";
-import { getAllEvents } from "./robotevents.ts";
-import { getEvent, getEventsRegion, getSignatureEvents } from "./robotevents.ts";
+import { getAllEvents, getEvent, getEventsRegion, getSignatureEvents } from "./robotevents.ts";
 
 if (import.meta.main) {
-    const events = getAllEvents();
-    // const events = getSignatureEvents();
-    let i = 0;
-    for await (const event of events) {
-        // if (event.level == EventLevel.Signature || event.name.toLowerCase().includes("one world")) continue; // skip over sigs if just processing a region to get rid of out-of-region teams
-        if (event.location.country != "United States") continue; // only look at US sigs
-        await processEvent(event);
+    const start_time = Date.now();
 
-        i++;
-        if (i % 50 == 0) {
-            await saveMatches();
-        }
-    }
+    // const events = getAllEvents();
+    // // const events = getSignatureEvents();
+    // let i = 0;
+    // for await (const event of events) {
+    //     // if (event.level == EventLevel.Signature || event.name.toLowerCase().includes("one world")) continue; // skip over sigs if just processing a region to get rid of out-of-region teams
+    //     // if (event.location.country != "United States") continue; // only look at US sigs
+    //     await processEvent(event);
 
-    await saveMatches();
+    //     i++;
+    //     if (i % 50 == 0) {
+    //         await saveMatches();
+    //     }
+    // }
+
+    // await saveMatches();
 
     // await processEvent(await getEvent("RE-VRC-23-4809"));
 
-    // await loadMatches(); // load cached matches from file
+    await loadMatches(); // load cached matches from file
+
+    setOSSettings({ tau: 5 }); // make tau super high because it makes it less messed up by isolated regions, even though accuracy goes down a little
 
     for (let j = 0; j < 10; j++) {
         processMatches();
@@ -31,8 +34,12 @@ if (import.meta.main) {
     const [accurate, total] = checkAccuracy();
 
     // await pruneTeamsByRegion("California"); // get rid of some of the teams who aren't in the region (doesn't get rid of all)
-    logTeams("all US", accurate/total);
+    logTeams("world", accurate/total);
     console.log(`Accuracy: ${Math.round(accurate / total * 100 * 100) / 100}% (${accurate}/${total})`);
+
+    const total_time = Date.now() - start_time;
+
+    console.log(`Time: ${total_time / 1000}s`);
 
     // allow for user input to predict matches
     while (true) {
