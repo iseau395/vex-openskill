@@ -25,9 +25,7 @@ if (import.meta.main) {
 
     await loadMatches(); // load cached matches from file
 
-    setOSSettings({ tau: 5 }); // make tau super high because it makes it less messed up by isolated regions, even though accuracy goes down a little
-
-    for (let j = 0; j < 10; j++) {
+    for (let j = 0; j < 5; j++) {
         processMatches();
     }
 

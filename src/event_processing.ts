@@ -56,8 +56,8 @@ type Options = NonNullable<Parameters<typeof rate>[1]>;
 let os_settings: Options = {
     mu: 31 * 3,
     sigma: 31,
-    tau: 0.9,
-    // tau: 10,
+    // tau: 0.9,
+    tau: 3,
     preventSigmaIncrease: false,
 };
 let mu_change = 0.001;
@@ -81,6 +81,10 @@ export function setSkillWalk(new_mu_change: number, new_sigma_change: number) {
 export function processMatch(match: Match) {
     if (!event_ids.includes(match.event.id)) {
         event_ids.push(match.event.id);
+    }
+
+    if (match.id == 75411631) {
+        return;
     }
 
     try {
@@ -237,9 +241,9 @@ export function checkAccuracy() {
             const blue_1 = blue_alliance.teams[0]?.team;
             const blue_2 = blue_alliance.teams[1]?.team;
 
-            // if (red_1?.name == "15442C" || red_2?.name == "15442C" || blue_1?.name == "15442C" || blue_2?.name == "15442C") {
-            //     console.log(`${match.id}: ${red_1?.name}, ${red_2?.name} | ${blue_1?.name}, ${blue_2?.name}`)
-            // }
+            if (red_1?.name == "15442C" || red_2?.name == "15442C" || blue_1?.name == "15442C" || blue_2?.name == "15442C") {
+                console.log(`${match.id}: ${red_1?.name}, ${red_2?.name} | ${blue_1?.name}, ${blue_2?.name}`);
+            }
 
             if (!red_1 || !red_2 || !blue_1 || !blue_2) {
                 continue;
